@@ -1,3 +1,4 @@
+
 import processing.serial.*;
 
 int screenWidth = 800;
@@ -7,13 +8,17 @@ int cushionWidth = 550;
 int cushionHeight = cushionWidth;
 int cushionDepth = 50;
 
-int sensorPositionRadius = 30;
+int sensorPositionRadius = 25;
 int sensorDataWidth = 20;
 
 color cushionColor = color(27, 163, 156);
+color redColor = color(214, 69, 65);
 
 ArrayList<PVector> sensorPositions = new ArrayList<PVector>();
 int[] sensorData = new int[8];
+PVector centerVector = new PVector(0, 0);
+
+SocketServer socketServer;
 
 void setup()
 {
@@ -34,14 +39,21 @@ void setup()
   }
 
   for(int i=0; i<sensorData.length; i++) {
-    sensorData[i] = i*100+200;
+    sensorData[i] = i*50+200;
   }
 
+  new ServerThread().start();
 }
 
 void draw()
 {
   background(255, 255, 255, 1);
+
+  // float fov = PI/3.0;
+  // float cameraZ = (height/2.0) / tan(fov/2.0);
+  // perspective(fov, float(width)/float(height), 
+  //           cameraZ/10.0, cameraZ*10.0);
+  camera(width/2.0+80, height/2.0-80, (height/2.0) / tan(PI*30.0 / 180.0), width/2.0, height/2.0, 0, 0, 1, 0);
 
   // setup light
   lights();
@@ -50,11 +62,21 @@ void draw()
 
   // draw cushion
   pushMatrix();
-  translate(width/2, height*4/5, -50);
+  translate(width/2, height*8.1/10, -50);
   rotateX(PI/2);
   noStroke();
   fill(cushionColor);
   box(cushionWidth, cushionHeight, cushionDepth);
+  popMatrix();
+
+  // draw original
+  pushMatrix();
+  translate(width/2, height*4/5-sensorPositionRadius/3-10, -50+sensorPositionRadius);
+  rotateX(PI/2);
+  noStroke();
+  fill(redColor);
+  sphereDetail(30); // standard
+  sphere(sensorPositionRadius);
   popMatrix();
 
   // draw sensor positions
@@ -74,7 +96,7 @@ void draw()
   for (int i = 0; i < sensorPositions.size(); i++) {
     pushMatrix();
     PVector position = PVector.mult(sensorPositions.get(i), cushionWidth*3.8/10);
-    translate(width/2+position.x, height*4/5-sensorPositionRadius/3, -50+sensorPositionRadius+position.y);
+    translate(width/2+position.x, height*4/5-sensorPositionRadius/3-sensorData[i]/2, -50+sensorPositionRadius+position.y);
     rotateX(PI/2);
     rotateZ(PI/4);
     // rotateZ(radians(frameCount));
@@ -82,5 +104,47 @@ void draw()
     fill(244, 179, 80);
     box(sensorDataWidth, sensorDataWidth, sensorData[i]);
     popMatrix();
+  }
+}
+
+void keyPressed()
+{
+ 
+  switch (keyCode) {
+    case UP:
+      String event = "up";
+      socketServer.sendToAll( event );
+      // do something if the key pressed was 'r'
+      break;  
+    default:  
+      break;
+  }
+ 
+}
+
+
+//create a separate thread for the server not to freeze/interfere with Processing's default animation thread
+public class ServerThread extends Thread{
+  @Override
+  public void run(){
+    try{
+          WebSocketImpl.DEBUG = false;
+          int port = 8887; // 843 flash policy port
+          try {
+            port = Integer.parseInt( args[ 0 ] );
+          } catch ( Exception ex ) {
+          }
+          socketServer = new SocketServer( port );
+          socketServer.start();
+          System.out.println( "WS Server started on port: " + socketServer.getPort() );
+
+          BufferedReader sysin = new BufferedReader( new InputStreamReader( System.in ) );
+          while ( true ) {
+            String in = sysin.readLine();
+            // socketServer.sendToAll( in );
+          }
+        }catch(IOException e){
+          e.printStackTrace();
+        }  
   }
 }
