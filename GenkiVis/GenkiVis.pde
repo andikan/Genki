@@ -6,7 +6,7 @@ String inputString = null;
 int lf = 10;    // Linefeed in ASCII
 
 int activeThreshold = 500;
-int directionThreshold = 200;
+int directionThreshold = 400;
 
 int screenWidth = 800;
 int screenhHeight = screenWidth;
@@ -26,8 +26,9 @@ color greenColor = color(3, 166, 120);
 color lightBlueColor = color(82, 179, 217);
 
 ArrayList<PVector> sensorPositions = new ArrayList<PVector>();
+int[] sensorOriginalValues = {911, 914, 928, 903, 897, 908, 910, 913};
 int[] sensorData = new int[8];
-int[] sensorDataCali = new int[8];
+int[] sensorDataError = new int[8];
 int sensorDataAvg = 0;
 PVector sensorCenterVector = new PVector(0, 0);
 
@@ -81,7 +82,7 @@ void draw()
     String inString = serialPort.readStringUntil('\n');
     if (inString != null){
       String[] inStringArr = inString.split(",");
-      // println(inStringArr);
+      println(inStringArr);
 
       if(inStringArr.length == 9){
         // refresh data
@@ -91,7 +92,8 @@ void draw()
         // get data
         for(int i=0; i<sensorData.length; i++) {
           int inputValue = Integer.parseInt(inStringArr[i]);
-          sensorData[i] = 800-inputValue;
+          inputValue = inputValue*600/1024;
+          sensorData[i] = 600 - inputValue;
           // set 100 ~ 600
           // int r = (int)random(100, 600);
           // sensorData[i] = r;
@@ -113,17 +115,40 @@ void draw()
         }
         sensorDataAvg = sensorDataAvg/sensorData.length;
         // println("sensorCenterVector: "+sensorCenterVector);
-        println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
+        // println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
+
+        // if(!isActive()) {
+        //   for(int i=0; i<sensorDataError.length; i++) {
+        //     if(sensorData[i] > 0) {
+        //       sensorDataError[i] = sensorDataAvg - sensorData[i];
+        //       sensorData[i] = sensorData[i] + sensorDataError[i];
+
+        //       maxValue = 0;
+        //       for (int j=0; j<sensorPositions.size(); j++) {
+        //         int data = sensorData[j];
+        //         sensorDataAvg = sensorDataAvg + data;
+        //         PVector pv = sensorPositions.get(j);
+        //         sensorCenterVector.add(PVector.mult(pv, data));
+
+        //         if(data > maxValue){
+        //           maxValue = data;
+        //         }
+        //       }
+        //       sensorDataAvg = sensorDataAvg/sensorData.length;
+        //     }
+        //   }
+        // }
 
         // setup background
         background(255, 245, 217, 1);
 
         // check is active
         if(isActive()) {
-          background(224, 130, 131, 1);
+          background(255, 225, 219, 1);
         }
         // check has direction
         if(hasDirection()) {
+          // background(224, 130, 131, 1);
           int directionPassedTime = millis() - directionBeginTime;
           if(directionPassedTime > directionTimeThreshold){
             float minDirectionAngle = 100000;
@@ -243,7 +268,7 @@ void draw()
         noStroke();
         fill(redColor);
         sphereDetail(30); // standard
-        sphere(sensorPositionRadius*(3+sensorDataAvg/600));
+        sphere(sensorPositionRadius*(3+sensorDataAvg*5/1024));
         popMatrix();
       }   
     }
