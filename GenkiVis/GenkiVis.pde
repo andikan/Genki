@@ -109,7 +109,7 @@ void draw()
     popMatrix();
   }
 }
-String event;
+
 void keyPressed()
 {
   String event = new String();
