@@ -16,6 +16,7 @@ color redColor = color(214, 69, 65);
 
 ArrayList<PVector> sensorPositions = new ArrayList<PVector>();
 int[] sensorData = new int[8];
+int sensorDataAvg;
 PVector centerVector = new PVector(0, 0);
 
 SocketServer socketServer;
@@ -42,12 +43,14 @@ void setup()
     sensorData[i] = i*50+200;
   }
 
+  
+
   new ServerThread().start();
 }
 
 void draw()
 {
-  background(255, 255, 255, 1);
+  background(238, 238, 238, 1);
 
   // float fov = PI/3.0;
   // float cameraZ = (height/2.0) / tan(fov/2.0);
@@ -109,17 +112,30 @@ void draw()
 
 void keyPressed()
 {
- 
+  String event = new String();
   switch (keyCode) {
     case UP:
-      String event = "up";
-      socketServer.sendToAll( event );
-      // do something if the key pressed was 'r'
-      break;  
+      event = "up";
+      emitEvent(event);
+      break;
+    case DOWN:
+      event = "down"; 
+      break;
+    case LEFT:
+      event = "left";
+      break;
+    case RIGHT:
+      event = "right";
+      break;
     default:  
       break;
   }
- 
+  emitEvent(event);
+}
+
+void emitEvent(String event)
+{
+  socketServer.sendToAll(event);
 }
 
 
