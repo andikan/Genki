@@ -5,8 +5,8 @@ Serial serialPort;
 String inputString = null;
 int lf = 10;    // Linefeed in ASCII
 
-int activeThreshold = 500;
-int directionThreshold = 400;
+int activeThreshold = 450;
+int directionThreshold = 200;
 
 int screenWidth = 800;
 int screenhHeight = screenWidth;
@@ -33,6 +33,7 @@ int sensorDataAvg = 0;
 PVector sensorCenterVector = new PVector(0, 0);
 
 SocketServer socketServer;
+Calibration cal; 
 
 // time counter
 int activeBeginTime = millis();
@@ -74,6 +75,8 @@ void setup()
 
   inputString = serialPort.readStringUntil(lf);
   inputString = null;
+
+  cal = new Calibration(); 
 }
 
 void draw()
@@ -82,7 +85,7 @@ void draw()
     String inString = serialPort.readStringUntil('\n');
     if (inString != null){
       String[] inStringArr = inString.split(",");
-      println(inStringArr);
+      // println(inStringArr);
 
       if(inStringArr.length == 9){
         // refresh data
@@ -91,9 +94,11 @@ void draw()
 
         // get data
         for(int i=0; i<sensorData.length; i++) {
-          int inputValue = Integer.parseInt(inStringArr[i]);
+          float inputValue = (float)Integer.parseInt(inStringArr[i]);
+          // inputValue = cal.getCaliData(inputValue, i);
+          // inputValue = inputValue*100;
           inputValue = inputValue*600/1024;
-          sensorData[i] = 600 - inputValue;
+          sensorData[i] = (int)(600-inputValue);
           // set 100 ~ 600
           // int r = (int)random(100, 600);
           // sensorData[i] = r;
@@ -115,7 +120,7 @@ void draw()
         }
         sensorDataAvg = sensorDataAvg/sensorData.length;
         // println("sensorCenterVector: "+sensorCenterVector);
-        // println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
+        println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
 
         // if(!isActive()) {
         //   for(int i=0; i<sensorDataError.length; i++) {
@@ -336,5 +341,44 @@ public class ServerThread extends Thread{
         }catch(IOException e){
           e.printStackTrace();
         }  
+  }
+}
+
+public static class Calibration{
+  
+  // The response curve 
+  private static float[] dist = new float[]{1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 5.5, 6.0, 6.5,
+    7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 11.0, 11.5, 12.0, 12.5, 13.0};
+  private static float[] val = new float[]{29.843, 32.277, 36.063, 42.84, 67.08, 261.84, 420.20, 542.93,
+    625.50, 688.3, 736.22, 772.22, 804.14, 828.45, 848.9, 866.46, 880.92, 893.98, 904.99, 914.77, 923.77,
+    931.36, 938.4, 944.64, 950.07};
+  private static float base = 1005.74; 
+  private static int LEN;
+
+  private static int[] sensorDataBase = new int[]{911, 914, 928, 903, 897, 908, 910, 913};
+
+  public Calibration(){
+    if (dist.length == val.length)
+      LEN = dist.length;
+    else
+      println("respone curve not match");     
+  }
+
+  private static float getCaliData(float raw, int sensorIdx){
+    float offset_raw = raw + base - sensorDataBase[sensorIdx];
+    int i = 0;
+    while (i < LEN && offset_raw > val[i]){ i++; }
+
+    if ( i == 0){
+      return 0;
+    }
+    else if ( i == LEN){
+      float tmp = dist[i-1] + (dist[i-1]-dist[i-2]) * (offset_raw-val[LEN-1]) / (val[i-1]-val[i-2]);
+      return tmp;
+    }
+    else{
+      float tmp = dist[i-1] + (dist[i]-dist[i-1]) * (offset_raw-val[i-1]) / (val[i]-val[i-1]);
+      return tmp;
+    }
   }
 }
