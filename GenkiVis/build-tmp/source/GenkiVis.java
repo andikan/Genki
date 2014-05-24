@@ -33,6 +33,9 @@ Serial serialPort;
 String inputString = null;
 int lf = 10;    // Linefeed in ASCII
 
+int activeThreshold = 500;
+int directionThreshold = 200;
+
 int screenWidth = 800;
 int screenhHeight = screenWidth;
 
@@ -46,15 +49,29 @@ int sensorDataWidth = 20;
 int bgColor = color(244, 179, 80, 0.5f);
 int cushionColor = color(27, 163, 156);
 int redColor = color(214, 69, 65);
+int pinkColor = color(226, 106, 106);
 int greenColor = color(3, 166, 120);
 int lightBlueColor = color(82, 179, 217);
 
 ArrayList<PVector> sensorPositions = new ArrayList<PVector>();
 int[] sensorData = new int[8];
+int[] sensorDataCali = new int[8];
 int sensorDataAvg = 0;
 PVector sensorCenterVector = new PVector(0, 0);
 
 SocketServer socketServer;
+
+String infoStr_sitting = "\u5c41\u5c41\u63a5\u89f8\u4e2d...";
+
+// time counter
+int activeBeginTime = millis();
+int activeTimeThreshold = 5000;
+int longBeginTime = millis();
+int longTimeThreshold = 5000;
+int directionBeginTime = millis();
+int directionTimeThreshold = 1000;
+int errorBeginTime = millis();
+int errorTimeThreshold = 5000;
 
 public void setup()
 {
@@ -94,6 +111,7 @@ public void draw()
     String inString = serialPort.readStringUntil('\n');
     if (inString != null){
       String[] inStringArr = inString.split(",");
+      // println(inStringArr);
 
       if(inStringArr.length == 9){
         // refresh data
@@ -103,7 +121,7 @@ public void draw()
         // get data
         for(int i=0; i<sensorData.length; i++) {
           int inputValue = Integer.parseInt(inStringArr[i]);
-          sensorData[i] = 850-inputValue;
+          sensorData[i] = 800-inputValue;
           // set 100 ~ 600
           // int r = (int)random(100, 600);
           // sensorData[i] = r;
@@ -111,6 +129,7 @@ public void draw()
           // fixed data
           // sensorData[i] = i*50+200; 
         }
+        // calculate average
         int maxValue = 0;
         for (int i=0; i<sensorPositions.size(); i++) {
           int data = sensorData[i];
@@ -128,6 +147,53 @@ public void draw()
 
         // setup background
         background(255, 245, 217, 1);
+
+        // check is active
+        if(isActive()) {
+          background(224, 130, 131, 1);
+        }
+        // check has direction
+        if(hasDirection()) {
+          int directionPassedTime = millis() - directionBeginTime;
+          if(directionPassedTime > directionTimeThreshold){
+            float minDirectionAngle = 100000;
+            int closeVecIndex = 0;
+            for (int i=0; i<sensorPositions.size(); i++) {
+              PVector sensorVec = sensorPositions.get(i);
+              float directionAngle = PVector.angleBetween(sensorVec, sensorCenterVector);
+              if(directionAngle < minDirectionAngle) {
+                minDirectionAngle = directionAngle;
+                closeVecIndex = i;
+              }
+            }
+
+            println("Direction: "+closeVecIndex);
+            String event = new String();
+            switch (closeVecIndex) {
+              case 2:
+                event = "up";
+                break;
+              case 6:
+                event = "down"; 
+                break;
+              case 4:
+                event = "left";
+                break;
+              case 0:
+                event = "right";
+                break;
+              default: 
+                event = "none";
+                break;
+            }
+            if(event != "none"){
+              emitEvent(event);
+            }
+
+            directionBeginTime = millis();
+          }
+        }
+
 
         // float fov = PI/3.0;
         // float cameraZ = (height/2.0) / tan(fov/2.0);
@@ -209,26 +275,19 @@ public void draw()
         sphereDetail(30); // standard
         sphere(sensorPositionRadius*(3+sensorDataAvg/600));
         popMatrix();
-
-        // pushMatrix();
-        // PVector centerPv = sensorCenterVector;
-        // float centerAngle = PVector.angleBetween(centerPv, sensorPositions.get(0));
-        // float centerM = centerPv.magSq();
-
-        // translate(width/2, height*4/5-sensorPositionRadius/3-20, -50+sensorPositionRadius/2-100);
-        // // rotateX(radians(frameCount));
-        // rotateY(-centerAngle);
-        // // rotateZ(PI/2);
-        // noStroke();
-        // fill(244, 179, 80);
-        // box(sensorDataWidth, sensorDataWidth, sensorDataAvg);
-        // popMatrix();
-      }
-      
+      }   
     }
   }
-  
+}
 
+public boolean isActive()
+{
+  return (sensorDataAvg > activeThreshold);
+}
+
+public boolean hasDirection()
+{
+  return (sensorCenterVector.mag() > directionThreshold);
 }
 
 public void keyPressed()
