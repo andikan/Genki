@@ -109,14 +109,13 @@ void draw()
     popMatrix();
   }
 }
-
+String event;
 void keyPressed()
 {
   String event = new String();
   switch (keyCode) {
     case UP:
       event = "up";
-      emitEvent(event);
       break;
     case DOWN:
       event = "down"; 
