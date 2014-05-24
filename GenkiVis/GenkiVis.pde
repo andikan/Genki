@@ -106,16 +106,28 @@ void draw()
     popMatrix();
   }
 }
-
+String event;
 void keyPressed()
 {
  
   switch (keyCode) {
     case UP:
-      String event = "up";
+      event = "up";
       socketServer.sendToAll( event );
       // do something if the key pressed was 'r'
       break;  
+    case RIGHT:
+      event = "right";
+      socketServer.sendToAll( event );
+      break;
+    case DOWN:
+      event = "down";
+      socketServer.sendToAll( event );
+      break;
+    case LEFT:
+      event = "left";
+      socketServer.sendToAll( event );
+      break;
     default:  
       break;
   }
