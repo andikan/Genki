@@ -11,6 +11,28 @@ function GameManager(size, InputManager, Actuator, StorageManager) {
   this.inputManager.on("keepPlaying", this.keepPlaying.bind(this));
 
   this.setup();
+
+  var inputEventManager = this.inputManager;
+  var ws = new WebSocket("ws://localhost:8887/");
+
+      ws.onopen = function()
+      {
+        // Web Socket is connected, send data using send()
+        console.log("Connection is establish...");
+      };
+      ws.onmessage = function (evt) 
+      { 
+        var received_msg = evt.data;
+        console.log("Message is received...");
+        console.log(received_msg);
+
+        inputEventManager.emit("move", 0);
+      };
+      ws.onclose = function()
+      { 
+        // websocket is closed.
+        console.log("Connection is closed..."); 
+      };
 }
 
 // Restart the game
