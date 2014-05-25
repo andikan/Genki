@@ -1,5 +1,9 @@
 
 import processing.serial.*;
+import ddf.minim.*;
+
+AudioPlayer player;
+Minim minim; //audio context
 
 Serial serialPort;
 String inputString = null;
@@ -44,7 +48,9 @@ int longTimeThreshold = 5000;
 int directionBeginTime = millis();
 int directionTimeThreshold = 1000;
 int errorBeginTime = millis();
-int errorTimeThreshold = 5000;
+int errorTimeThreshold = 3000;
+
+boolean isErrorActive = false;
 
 void setup()
 {
@@ -76,6 +82,8 @@ void setup()
 
   inputString = serialPort.readStringUntil(lf);
   inputString = null;
+
+  minim = new Minim(this);
 
   cal = new Calibration(); 
 }
@@ -123,28 +131,6 @@ void draw()
         // println("sensorCenterVector: "+sensorCenterVector);
         // println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
 
-        // if(!isActive()) {
-        //   for(int i=0; i<sensorDataError.length; i++) {
-        //     if(sensorData[i] > 0) {
-        //       sensorDataError[i] = sensorDataAvg - sensorData[i];
-        //       sensorData[i] = sensorData[i] + sensorDataError[i];
-
-        //       maxValue = 0;
-        //       for (int j=0; j<sensorPositions.size(); j++) {
-        //         int data = sensorData[j];
-        //         sensorDataAvg = sensorDataAvg + data;
-        //         PVector pv = sensorPositions.get(j);
-        //         sensorCenterVector.add(PVector.mult(pv, data));
-
-        //         if(data > maxValue){
-        //           maxValue = data;
-        //         }
-        //       }
-        //       sensorDataAvg = sensorDataAvg/sensorData.length;
-        //     }
-        //   }
-        // }
-
         // setup background
         background(255, 245, 217, 1);
 
@@ -154,7 +140,27 @@ void draw()
         }
         // check has direction
         if(hasDirection()) {
-          // background(224, 130, 131, 1);
+          if(!isErrorActive){
+            isErrorActive = true;
+            errorBeginTime = millis();
+          }
+          else{
+            int errorPassedTime = millis() - errorBeginTime;
+            if(errorPassedTime > errorTimeThreshold){
+              // sitting error sound
+              if(errorBeginTime%3 == 0)
+                player = minim.loadFile("fart1.mp3", 2048);
+              else if(errorBeginTime%3 == 1)
+                player = minim.loadFile("fart4.mp3", 2048);
+              else
+                player = minim.loadFile("fart5.mp3", 2048);
+
+              player.setGain(100.0);
+              player.play();
+              errorBeginTime = millis();
+            }
+          }
+
           int directionPassedTime = millis() - directionBeginTime;
           if(directionPassedTime > directionTimeThreshold){
             float minDirectionAngle = 100000;
@@ -193,6 +199,9 @@ void draw()
 
             directionBeginTime = millis();
           }
+        }
+        else { // without direction
+          isErrorActive = false;
         }
 
 
