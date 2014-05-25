@@ -183,10 +183,10 @@ void draw()
               case 6:
                 event = "down"; 
                 break;
-              case 4:
+              case 0:
                 event = "left";
                 break;
-              case 0:
+              case 4:
                 event = "right";
                 break;
               default: 
