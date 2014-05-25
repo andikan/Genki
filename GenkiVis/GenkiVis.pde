@@ -5,7 +5,7 @@ Serial serialPort;
 String inputString = null;
 int lf = 10;    // Linefeed in ASCII
 
-int activeThreshold = 450;
+int activeThreshold = 350;
 int directionThreshold = 200;
 
 int screenWidth = 800;
@@ -26,11 +26,12 @@ color greenColor = color(3, 166, 120);
 color lightBlueColor = color(82, 179, 217);
 
 ArrayList<PVector> sensorPositions = new ArrayList<PVector>();
-int[] sensorOriginalValues = {911, 914, 928, 903, 897, 908, 910, 913};
 int[] sensorData = new int[8];
 int[] sensorDataError = new int[8];
 int sensorDataAvg = 0;
 PVector sensorCenterVector = new PVector(0, 0);
+
+int[] sensorZero = new int[]{0, 0, 0, 0 ,0 ,0 ,0, 0};
 
 SocketServer socketServer;
 Calibration cal; 
@@ -109,7 +110,7 @@ void draw()
         // calculate average
         int maxValue = 0;
         for (int i=0; i<sensorPositions.size(); i++) {
-          int data = sensorData[i];
+          int data = sensorData[i] - sensorZero[i] + 300;
           sensorDataAvg = sensorDataAvg + data;
           PVector pv = sensorPositions.get(i);
           sensorCenterVector.add(PVector.mult(pv, data));
@@ -120,7 +121,7 @@ void draw()
         }
         sensorDataAvg = sensorDataAvg/sensorData.length;
         // println("sensorCenterVector: "+sensorCenterVector);
-        println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
+        // println("sensorDataAvg: "+sensorDataAvg+", max: "+maxValue);
 
         // if(!isActive()) {
         //   for(int i=0; i<sensorDataError.length; i++) {
@@ -273,7 +274,7 @@ void draw()
         noStroke();
         fill(redColor);
         sphereDetail(30); // standard
-        sphere(sensorPositionRadius*(3+sensorDataAvg*5/1024));
+        sphere(sensorPositionRadius*(3+sensorDataAvg*3/1024));
         popMatrix();
       }   
     }
@@ -305,6 +306,10 @@ void keyPressed()
       break;
     case RIGHT:
       event = "right";
+      break;
+    case ' ':
+      for (int i=0; i < sensorZero.length; i++)
+        sensorZero[i] = sensorData[i];
       break;
     default:  
       break;
