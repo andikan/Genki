@@ -183,10 +183,10 @@ void draw()
               case 6:
                 event = "down"; 
                 break;
-              case 0:
+              case 4:
                 event = "left";
                 break;
-              case 4:
+              case 0:
                 event = "right";
                 break;
               default: 
@@ -253,8 +253,8 @@ void draw()
           PVector position = PVector.mult(sensorPositions.get(i), cushionWidth*3.8/10);
           translate(width/2+position.x, height*4/5-sensorPositionRadius/3-sensorData[i]/2, -50+sensorPositionRadius+position.y);
           rotateX(PI/2);
-          rotateZ(PI/4);
-          // rotateZ(radians(frameCount));
+          // rotateZ(PI/4);
+          rotateZ(radians(frameCount));
           noStroke();
           fill(244, 179, 80);
           box(sensorDataWidth, sensorDataWidth, sensorData[i]);
